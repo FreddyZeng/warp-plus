@@ -1,0 +1,20 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.12', '1.13' ]
+    name: Go ${{ matrix.go }}
+    steps:
+      - uses: actions/checkout@master
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+      - run: gofmt -d . | read && exit 1 || true
+      - run: go vet ./...
+      - run: go test -v -race -cover ./...

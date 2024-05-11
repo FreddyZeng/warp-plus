@@ -1,0 +1,11 @@
+foo:
+  bar:
+    s: a string
+nested:
+  b: true
+  f: 1.23
+x:
+  value:
+    - one
+    - two
+    - three
