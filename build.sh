@@ -4,7 +4,8 @@
 OUTPUT_BASE="./bin"
 
 # 定义不同的平台
-PLATFORMS=("windows/amd64" "linux/amd64" "darwin/amd64" "darwin/arm64" "linux/arm64")
+ PLATFORMS=("windows/amd64" "linux/amd64" "darwin/amd64" "darwin/arm64" "linux/arm64")
+#PLATFORMS=("darwin/amd64")
 
 # 为每个平台编译并指定输出路径
 for PLATFORM in "${PLATFORMS[@]}"; do
@@ -16,6 +17,7 @@ for PLATFORM in "${PLATFORMS[@]}"; do
     if [ $GOOS = "windows" ]; then
         OUTPUT+='.exe'
     fi
-    env GOOS=$GOOS GOARCH=$GOARCH go build -o $OUTPUT
+    env GOOS=$GOOS GOARCH=$GOARCH go build -ldflags="-s -w" -o $OUTPUT
+    #env GOOS=$GOOS GOARCH=$GOARCH go build -o $OUTPUT
     echo 'Built:' $OUTPUT
 done

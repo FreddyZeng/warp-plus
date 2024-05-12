@@ -129,7 +129,7 @@ func makeClient() *http.Client {
 	}
 }
 
-func doRegister(publicKey string) (Identity, error) {
+func doRegister(l *slog.Logger, publicKey string, zerotrusttoken string) (Identity, error) {
 	data := map[string]interface{}{
 		"install_id":   "",
 		"fcm_token":    "",
@@ -155,6 +155,10 @@ func doRegister(publicKey string) (Identity, error) {
 	for k, v := range defaultHeaders {
 		req.Header.Set(k, v)
 	}
+	
+	l.Info("CF-Access-Jwt-Assertion:")
+	l.Info(zerotrusttoken)
+	req.Header.Set("CF-Access-Jwt-Assertion", zerotrusttoken)
 
 	// Create HTTP client and execute request
 	resp, err := client.Do(req)
@@ -194,7 +198,8 @@ func saveIdentity(a Identity, path string) error {
 	return file.Close()
 }
 
-func updateLicenseKey(accountID, accessToken, license string) (IdentityAccount, error) {
+func updateLicenseKey(accountID, accessToken, license string, zerotrusttoken string) (IdentityAccount, error) {
+	
 	jsonData, err := json.Marshal(map[string]string{"license": license})
 	if err != nil {
 		return IdentityAccount{}, err
@@ -212,6 +217,8 @@ func updateLicenseKey(accountID, accessToken, license string) (IdentityAccount, 
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+
+	req.Header.Set("CF-Access-Jwt-Assertion", zerotrusttoken)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -291,7 +298,7 @@ func createConf(i Identity, path string) error {
 	return os.WriteFile(filepath.Join(path, profileFile), buffer.Bytes(), 0o600)
 }
 
-func LoadOrCreateIdentity(l *slog.Logger, path, license string) error {
+func LoadOrCreateIdentity(l *slog.Logger, path, license string, zerotrusttoken string) error {
 	i, err := LoadIdentity(path)
 	if err != nil {
 		l.Info("failed to load identity", "path", path, "error", err)
@@ -301,13 +308,13 @@ func LoadOrCreateIdentity(l *slog.Logger, path, license string) error {
 		if err := os.MkdirAll(path, os.ModePerm); err != nil {
 			return err
 		}
-		i, err = CreateIdentity(l, path, license)
+		i, err = CreateIdentity(l, path, license, zerotrusttoken)
 		if err != nil {
 			return err
 		}
 	}
 
-	if license != "" && i.Account.License != license {
+	if license != "" && zerotrusttoken == "" && i.Account.License != license {
 		l.Info("license recreating identity with new license")
 		if err := os.RemoveAll(path); err != nil {
 			return err
@@ -315,11 +322,15 @@ func LoadOrCreateIdentity(l *slog.Logger, path, license string) error {
 		if err := os.MkdirAll(path, os.ModePerm); err != nil {
 			return err
 		}
-		i, err = CreateIdentity(l, path, license)
+		i, err = CreateIdentity(l, path, license, zerotrusttoken)
 		if err != nil {
 			return err
 		}
 	}
+
+
+	l.Info("path:")
+	l.Info(path)
 
 	err = createConf(i, path)
 	if err != nil {
@@ -363,7 +374,7 @@ func LoadIdentity(path string) (Identity, error) {
 	return *i, nil
 }
 
-func CreateIdentity(l *slog.Logger, path, license string) (Identity, error) {
+func CreateIdentity(l *slog.Logger, path, license string, zerotrusttoken string) (Identity, error) {
 	priv, err := GeneratePrivateKey()
 	if err != nil {
 		return Identity{}, err
@@ -372,14 +383,19 @@ func CreateIdentity(l *slog.Logger, path, license string) (Identity, error) {
 	privateKey, publicKey := priv.String(), priv.PublicKey().String()
 
 	l.Info("creating new identity")
-	i, err := doRegister(publicKey)
+	i, err := doRegister(l, publicKey, zerotrusttoken)
 	if err != nil {
 		return Identity{}, err
 	}
 
-	if license != "" {
+	l.Info("license:")
+	l.Info(license)
+	l.Info("zerotrusttoken:")
+	l.Info(zerotrusttoken)
+
+	if license != "" && zerotrusttoken == "" {
 		l.Info("updating account license key")
-		ac, err := updateLicenseKey(i.ID, i.Token, license)
+		ac, err := updateLicenseKey(i.ID, i.Token, license, zerotrusttoken)
 		if err != nil {
 			return Identity{}, err
 		}
@@ -396,7 +412,7 @@ func CreateIdentity(l *slog.Logger, path, license string) (Identity, error) {
 	return i, nil
 }
 
-func RemoveDevice(l *slog.Logger, accountID, accessToken string) error {
+func RemoveDevice(l *slog.Logger, accountID, accessToken string, zerotrusttoken string) error {
 	url := fmt.Sprintf("%s/%s", regURL, accountID)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -408,6 +424,8 @@ func RemoveDevice(l *slog.Logger, accountID, accessToken string) error {
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+
+	req.Header.Set("CF-Access-Jwt-Assertion", zerotrusttoken)
 
 	// Create HTTP client and execute request
 	resp, err := client.Do(req)

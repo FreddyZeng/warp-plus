@@ -73,6 +73,7 @@ func main() {
 		bind     = fs.String('b', "bind", "127.0.0.1:8086", "socks bind address")
 		endpoint = fs.String('e', "endpoint", "", "warp endpoint")
 		key      = fs.String('k', "key", "", "warp key")
+		zerotoken      = fs.String('t', "zerotoken", "", "zero trust token")
 		gool     = fs.BoolLong("gool", "enable gool mode (warp in warp)")
 		psiphon  = fs.BoolLong("cfon", "enable psiphon mode (must provide country as well)")
 		country  = fs.StringEnumLong("country", fmt.Sprintf("psiphon country code (valid values: %s)", psiphonCountries), psiphonCountries...)
@@ -145,6 +146,10 @@ func main() {
 		opts.CacheDir = path.Join(os.Getenv("HOME"), ".cache", appName)
 	default:
 		opts.CacheDir = "warp_plus_cache"
+	}
+
+	if *zerotoken != "" {
+		opts.ZeroTrustToken = *zerotoken
 	}
 
 	if *psiphon {

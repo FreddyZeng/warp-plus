@@ -2,11 +2,12 @@
   "verbose": false,
   "bind": "127.0.0.1:8086",
   "endpoint": "",
-  "key": "",
+  "key": "N/A",
+  "zerotoken": "",
   "gool": false,
   "cfon": false,
-  "country": "DE",
+  "country": "US",
   "scan": true,
-  "rtt": "1000ms",
-  "cache-dir": ""
+  "cache-dir": "",
+  "rtt": "1000ms"
 }

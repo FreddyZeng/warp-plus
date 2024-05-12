@@ -21,6 +21,7 @@ type WarpOptions struct {
 	Bind     netip.AddrPort
 	Endpoint string
 	License  string
+	ZeroTrustToken string
 	Psiphon  *PsiphonOptions
 	Gool     bool
 	Scan     *wiresocks.ScanOptions
@@ -212,14 +213,14 @@ func runWarpInWarp(ctx context.Context, l *slog.Logger, opts WarpOptions, endpoi
 
 func createPrimaryAndSecondaryIdentities(l *slog.Logger, opts WarpOptions) error {
 	// make primary identity
-	err := warp.LoadOrCreateIdentity(l, path.Join(opts.CacheDir, "primary"), opts.License)
+	err := warp.LoadOrCreateIdentity(l, path.Join(opts.CacheDir, "primary"), opts.License, opts.ZeroTrustToken)
 	if err != nil {
 		l.Error("couldn't load primary warp identity")
 		return err
 	}
 
 	// make secondary
-	err = warp.LoadOrCreateIdentity(l, path.Join(opts.CacheDir, "secondary"), opts.License)
+	err = warp.LoadOrCreateIdentity(l, path.Join(opts.CacheDir, "secondary"), opts.License, opts.ZeroTrustToken)
 	if err != nil {
 		l.Error("couldn't load secondary warp identity")
 		return err
